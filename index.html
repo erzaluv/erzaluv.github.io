@@ -66,6 +66,11 @@
                 scoreText.setAttribute('value', `Score: ${score}`);
             }
         });
+        
+        // Проверка на окончание игры
+        if (score >= collectibles.length) {
+            endGame();
+        }
     }
 
     const countdown = setInterval(() => {
@@ -74,12 +79,18 @@
             timerText.setAttribute('value', `Время: ${timer}`);
             checkForCollectibles();
         } else if (timer === 0 && !gameOver) {
-            gameOver = true;
-            clearInterval(countdown);
-            document.getElementById('final-score').innerText = score;
-            document.getElementById('game-over').style.display = 'block';
+            endGame();
         }
     }, 1000);
+
+    function endGame() {
+        gameOver = true;
+        clearInterval(countdown);
+        document.getElementById('final-score').innerText = score;
+        document.getElementById('game-over').style.display = 'block';
+        // Отключаем управление игроком
+        document.getElementById('player').setAttribute('dynamic-body', 'mass: 0'); // Отключение физики
+    }
 
     document.getElementById('restart-btn').addEventListener('click', () => {
         location.reload();
@@ -87,7 +98,6 @@
 
     const playerEntity = document.getElementById('player');
 
-    // Перемещение игрока через контроллеры
     function movePlayer(controller) {
         const controllerPosition = controller.object3D.position;
         playerEntity.setAttribute('position', {
