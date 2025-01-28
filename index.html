@@ -24,7 +24,7 @@
     <a-plane rotation="-90 0 0" width="100" height="100" color="#7BC8A4" static-body></a-plane>
 
     <!-- Игрок -->
-    <a-entity id="player" position="0 1.6 0" camera look-controls wasd-controls dynamic-body>
+    <a-entity id="player" position="0 1.6 0" camera look-controls dynamic-body>
         <a-cursor color="red"></a-cursor>
         <a-entity position="0 -0.5 0" geometry="primitive: ring; radiusInner: 0.1; radiusOuter: 0.2" material="color: red"></a-entity>
     </a-entity>
@@ -54,18 +54,16 @@
 
     const collectibles = document.querySelectorAll('.collectible');
 
-    // Проверка на наличие сфер
     function checkForCollectibles() {
         collectibles.forEach(collectible => {
             const collectiblePosition = collectible.object3D.position;
             const playerPosition = document.getElementById('player').object3D.position;
 
-            // Проверяем расстояние между игроком и сферой
             const distance = collectiblePosition.distanceTo(playerPosition);
-            if (distance < 1) { // Радиус взаимодействия
-                collectible.parentNode.removeChild(collectible); // Удаление шарика
-                score++; // Увеличение счета
-                scoreText.setAttribute('value', Score: ${score}); // Обновление текста счета
+            if (distance < 1) {
+                collectible.parentNode.removeChild(collectible);
+                score++;
+                scoreText.setAttribute('value', `Score: ${score}`);
             }
         });
     }
@@ -73,8 +71,8 @@
     const countdown = setInterval(() => {
         if (timer > 0 && !gameOver) {
             timer--;
-            timerText.setAttribute('value', Время: ${timer});
-            checkForCollectibles(); // Проверка на наличие сфер
+            timerText.setAttribute('value', `Время: ${timer}`);
+            checkForCollectibles();
         } else if (timer === 0 && !gameOver) {
             gameOver = true;
             clearInterval(countdown);
@@ -82,26 +80,23 @@
             document.getElementById('game-over').style.display = 'block';
         }
     }, 1000);
+
     document.getElementById('restart-btn').addEventListener('click', () => {
-        location.reload(); // Перезапуск игры
+        location.reload();
     });
 
-    // Перемещение игрока через контроллеры
     const playerEntity = document.getElementById('player');
 
-    // Обработчик событий для контроллеров
+    // Перемещение игрока через контроллеры
     function movePlayer(controller) {
-        const controllerPosition = controller.getAttribute('position');
-        const playerPosition = playerEntity.object3D.position;
-
-        // Перемещение игрока в точку, куда указывает контроллер
+        const controllerPosition = controller.object3D.position;
         playerEntity.setAttribute('position', {
             x: controllerPosition.x,
-            y: playerPosition.y, // Сохраняем высоту игрока
+            y: playerEntity.object3D.position.y,
             z: controllerPosition.z
         });
 
-        checkForCollectibles(); // Проверка на наличие сфер
+        checkForCollectibles();
     }
 
     // Добавляем обработчики событий для контроллеров
