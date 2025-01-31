@@ -1,111 +1,130 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A-Frame Game</title>
-   
-    <script src="http://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
-    <script src="http://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <meta charset="utf-8">
+  <title>VR Mini Game</title>
+  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
+  <style>
+    body { margin: 0; }
+    a-scene { width: 100%; height: 100%; }
+  </style>
 </head>
 <body>
-    <a-scene physics="debug: true">
-        <!-- Небо -->
-        <a-sky color="#87CEEB"></a-sky>
+  <a-scene physics="debug: true">
+    <a-assets>
+      <img id="sky" src="sky.png">
+      <img id="ground" src="ground.jpg">
+    </a-assets>
 
-        <!-- Пол -->
-        <a-plane position="0 0 0" rotation="-90 0 0" width="100" height="100" color="#7CFC00" static-body></a-plane>
+    <!-- Небо -->
+    <a-sky src="#sky"></a-sky>
 
-        <!-- Игрок -->
-        <a-entity id="player" position="0 1.6 0">
-            <a-camera></a-camera>
-            <a-entity position="0 0 -1" cursor="rayOrigin: mouse"></a-entity>
-        </a-entity>
+    <!-- Камера и курсор -->
+    <a-entity camera look-controls wasd-controls="acceleration:100" position="0 1.6 0">
+      <a-entity cursor="rayOrigin: mouse"
+                raycaster="objects: a-sphere"
+                position="0 0 -1"
+                geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
+                material="color: black; shader: flat">
+      </a-entity>
+    </a-entity>
 
-        <!-- Объекты для сбора -->
-        <a-entity id="object1" geometry="primitive: sphere" material="color: red" position="0 1 -5" class="collectable" dynamic-body></a-entity>
-        <a-entity id="object2" geometry="primitive: box" material="color: blue" position="3 1 -5" class="collectable" dynamic-body></a-entity>
-        <a-entity id="object3" geometry="primitive: cone" material="color: green" position="-3 1 -5" class="collectable" dynamic-body></a-entity>
+    <!-- Пол -->
+    <a-plane src="#ground"
+      position="0 0 -4" 
+      rotation="-90 0 0" 
+      width="100" 
+      height="100"
+      static-body>
+    </a-plane>
 
-        <!-- Текстовый элемент для счета -->
-        <a-entity id="score" text="value: Score: 0; align: center; width: 4" position="0 2.5 -1.5"></a-entity>
+    <!-- Счетчик очков -->
+    <a-text 
+      id="scoreText" 
+      value="Score: 0" 
+      position="0 2.5 -5" 
+      color="black" 
+      align="center">
+    </a-text>
 
-        <!-- Текстовый элемент для таймера -->
-        <a-entity id="timer" text="value: Time: 30; align: center; width: 4" position="0 2 -1.5"></a-entity>
+    <!-- Таймер -->
+    <a-text 
+      id="timerText" 
+      value="Time: 120" 
+      position="1.5 2.5 -5" 
+      color="black">
+    </a-text>
 
-        <!-- Анимация исчезновения -->
-        <a-entity id="explosion" particle-system="preset: explosion; color: yellow" visible="false"></a-entity>
+    <!-- Эффект частиц для исчезновения -->
+    <a-entity id="explosion" particle-system="preset: explosion; color: yellow"></a-entity>
 
-        <!-- Звук сбора -->
-        <a-sound src="https://cdn.aframe.io/360-image-gallery-boilerplate/audio/click.ogg" autoplay="false" id="collectSound"></a-sound>
+  </a-scene>
 
-        <!-- Движущийся объект -->
-        <a-entity id="movingObj" geometry="primitive: cone" material="color: red" 
-                  position="0 2 -8" animation="property: position; to: 5 2 -8; dur: 2000; loop: true" dynamic-body>
-        </a-entity>
+  <script>
+    // JavaScript код для логики игры
+    const numSpheres = 20; // количество сфер
+    const scene = document.querySelector('a-scene');
 
-        <!-- 3D модель -->
-        <a-assets>
-            <a-asset-item id="tree" src="https://cdn.aframe.io/test-models/models/tree1/model.gltf"></a-asset-item>
-        </a-assets>
-        <a-entity gltf-model="#tree" position="5 0 -10" scale="0.5 0.5 0.5"></a-entity>
-    </a-scene>
+    let score = 0;
+    let timeLeft = 120; // время в секундах
+    const scoreText = document.getElementById('scoreText');
+    const timerText = document.getElementById('timerText');
 
-    <script>
-        // Инициализация переменных
-        let score = 0;
-        let timeLeft = 30;
+    // Функция для создания сфер
+    function createSpheres() {
+      for (let i = 0; i < numSpheres; i++) {
+        const sphere = document.createElement('a-sphere');
+        sphere.setAttribute('radius', '0.5'); // радиус сферы
+        sphere.setAttribute('color', '#EF2D5E'); // цвет сферы
+        
+        // Генерация случайных координат
+        const x = (Math.random() - 0.5) * 100; // случайное значение от -50 до 50
+        const z = (Math.random() - 0.5) * -100; // случайное значение от -50 до 0
+        sphere.setAttribute('position', `${x} 1.25 ${z}`);
+        
+        // Добавление физики к сфере
+        sphere.setAttribute('dynamic-body', '');
 
-        // Обработка столкновений
-        document.querySelectorAll('.collectable').forEach(object => {
-            object.addEventListener('collide', function() {
-                this.setAttribute('visible', false); // Скрываем объект
-                score++; // Увеличиваем счет
-                document.querySelector('#score').setAttribute('value', `Score: ${score}`); // Обновляем счет
-                document.querySelector('#collectSound').components.sound.playSound(); // Воспроизводим звук
-                document.querySelector('#explosion').setAttribute('visible', true); // Анимация исчезновения
-                setTimeout(() => document.querySelector('#explosion').setAttribute('visible', false), 500); // Скрываем анимацию
-            });
+        // Добавление обработчика hover
+        sphere.addEventListener('mouseenter', function () {
+          score++;
+          scoreText.setAttribute('value', `Score: ${score}`);
+
+          // Эффект частиц при исчезновении
+          const explosion = document.getElementById('explosion');
+          explosion.setAttribute('position', sphere.getAttribute('position'));
+          explosion.setAttribute('particle-system', 'preset: explosion; color: yellow');
+          explosion.components['particle-system'].start();
+
+          // Удаляем сферу через небольшой промежуток времени
+          setTimeout(() => {
+            scene.removeChild(sphere);
+          }, 100); // Задержка для отображения эффекта частиц
         });
 
-        // Таймер
-        const timer = document.querySelector('#timer');
-        function updateTimer() {
-            timer.setAttribute('value', `Time: ${timeLeft}`);
-            if (timeLeft <= 0) {
-                endGame();
-            } else {
-                timeLeft--;
-                setTimeout(updateTimer, 1000);
-            }
-        }
+        scene.appendChild(sphere); // добавление сферы в сцену
+      }
+    }
 
-        // Завершение игры
-        function endGame() {
-            alert(`Game Over! Your score: ${score}`);
-            window.location.reload(); // Перезапуск игры
-        }
+    // Функция для обновления таймера
+    function updateTimer() {
+      if (timeLeft > 0) {
+        timeLeft--;
+        timerText.setAttribute('value', `Time: ${timeLeft}`);
+      } else {
+        clearInterval(timerInterval);
+        alert("Время вышло! Игра окончена.");
+      }
+    }
 
-        // Запуск таймера
-        updateTimer();
-
-        // Гравитация
-        AFRAME.registerComponent('gravity', {
-            tick: function () {
-                this.el.body.applyForce(0, -9.8, 0);
-            }
-        });
-
-        // Рандомизация позиций объектов при перезапуске
-        function spawnObjects() {
-            const positions = [];
-            for (let i = 0; i < 5; i++) {
-                const x = Math.random() * 10 - 5;
-                const z = Math.random() * 10 - 5;
-                positions.push({x, y: 1, z});
-            }
-            return positions;
-        }
-    </script>
+    // Запуск игры
+    createSpheres();
+    
+    // Запуск таймера
+    const timerInterval = setInterval(updateTimer, 1000);
+    
+  </script>
 </body>
 </html>
