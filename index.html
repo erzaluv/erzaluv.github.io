@@ -30,9 +30,6 @@
         <a-entity position="0 -0.5 0" geometry="primitive: ring; radiusInner: 0.1; radiusOuter: 0.2" material="color: red"></a-entity>
     </a-entity>
 
-    <!-- Объекты для сбора -->
-    <!-- Объекты будут создаваться динамически через JavaScript -->
-
     <!-- Текст для счета и таймера -->
     <a-text id="score-text" value="Score: 0" position="-1 4 -4.1" color="#FFF"></a-text>
     <a-text id="timer-text" value="Время: 30" position="2 4 -4.1" color="#FFF"></a-text>
@@ -49,8 +46,8 @@ let gameOver = false;
 
 const scoreText = document.getElementById('score-text');
 const timerText = document.getElementById('timer-text');
-const collectibles = [];
 
+// Функция для создания collectible объекта
 function createCollectible(position) {
     const collectible = document.createElement('a-sphere');
     collectible.setAttribute('position', position);
@@ -63,13 +60,14 @@ function createCollectible(position) {
     collectible.setAttribute('color', randomColor);
     collectible.setAttribute('class', 'collectible');
     collectible.setAttribute('dynamic-body', '');
-    
+
     // Добавление анимации
     collectible.setAttribute('animation__scale', 'property: scale; to: 1.2 1.2 1.2; dir: alternate; dur: 500; loop: true');
 
     document.querySelector('a-scene').appendChild(collectible);
 }
 
+// Функция для генерации случайных объектов
 function spawnObjects() {
    for (let i = 0; i < 6; i++) {
        const x = Math.random() * 10 - 5;
