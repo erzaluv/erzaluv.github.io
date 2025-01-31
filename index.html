@@ -42,80 +42,120 @@
     <a-text id="score-text" value="Score: 0" position="-1 4 -4.1" color="#FFF"></a-text>
     <a-text id="timer-text" value="Время: 30" position="2 4 -4.1" color="#FFF"></a-text>
 
+    <!-- Звук при сборе -->
+    <a-sound src="yoursound.wav" autoplay="false" id="collectSound"></a-sound>
+
+    <!-- Движущиеся объекты -->
+    <a-entity id="movingObj" geometry="primitive: cone" material="color: red"
+              position="0 2 -8"
+              animation="property: position; to: 5 2 -8; dur: 2000; loop: true">
+    </a-entity>
+
 </a-scene>
 
 <script>
-    let score = 0;
-    let timer = 30;
-    let gameOver = false;
+let score = 0;
+let timer = 30;
+let gameOver = false;
 
-    const scoreText = document.getElementById('score-text');
-    const timerText = document.getElementById('timer-text');
+const scoreText = document.getElementById('score-text');
+const timerText = document.getElementById('timer-text');
+const collectibles = document.querySelectorAll('.collectible');
 
-    const collectibles = document.querySelectorAll('.collectible');
+function checkForCollectibles() {
+    collectibles.forEach(collectible => {
+        const collectiblePosition = collectible.object3D.position;
+        const playerPosition = document.getElementById('player').object3D.position;
 
-    function checkForCollectibles() {
-        collectibles.forEach(collectible => {
-            const collectiblePosition = collectible.object3D.position;
-            const playerPosition = document.getElementById('player').object3D.position;
-
-            const distance = collectiblePosition.distanceTo(playerPosition);
-            if (distance < 1) {
-                collectible.parentNode.removeChild(collectible);
-                score++;
-                scoreText.setAttribute('value', `Score: ${score}`);
-            }
-        });
-        
-        // Проверка на окончание игры
-        if (score >= collectibles.length) {
-            endGame();
+        const distance = collectiblePosition.distanceTo(playerPosition);
+        if (distance < 1) {
+            collectible.parentNode.removeChild(collectible);
+            score++;
+            scoreText.setAttribute('value', `Score: ${score}`);
+            // Воспроизведение звука при сборе
+            document.querySelector('#collectSound').components.sound.playSound();
         }
-    }
-
-    const countdown = setInterval(() => {
-        if (timer > 0 && !gameOver) {
-            timer--;
-            timerText.setAttribute('value', `Время: ${timer}`);
-            checkForCollectibles();
-        } else if (timer === 0 && !gameOver) {
-            endGame();
-        }
-    }, 1000);
-
-    function endGame() {
-        gameOver = true;
-        clearInterval(countdown);
-        document.getElementById('final-score').innerText = score;
-        document.getElementById('game-over').style.display = 'block';
-        // Отключаем управление игроком
-        document.getElementById('player').setAttribute('dynamic-body', 'mass: 0'); // Отключение физики
-    }
-
-    document.getElementById('restart-btn').addEventListener('click', () => {
-        location.reload();
     });
 
-    const playerEntity = document.getElementById('player');
-
-    function movePlayer(controller) {
-        const controllerPosition = controller.object3D.position;
-        playerEntity.setAttribute('position', {
-            x: controllerPosition.x,
-            y: playerEntity.object3D.position.y,
-            z: controllerPosition.z
-        });
-
-        checkForCollectibles();
+    // Проверка на окончание игры
+    if (score >= collectibles.length) {
+        endGame();
     }
+}
 
-    // Добавляем обработчики событий для контроллеров
-    const rightController = document.querySelector('#right-hand');
-    const leftController = document.querySelector('#left-hand');
+const countdown = setInterval(() => {
+    if (timer > 0 && !gameOver) {
+        timer--;
+        timerText.setAttribute('value', `Время: ${timer}`);
+        checkForCollectibles();
+    } else if (timer === 0 && !gameOver) {
+        endGame();
+    }
+}, 1000);
 
-    rightController.addEventListener('selectstart', () => movePlayer(rightController));
-    leftController.addEventListener('selectstart', () => movePlayer(leftController));
+function endGame() {
+    gameOver = true;
+    clearInterval(countdown);
+    document.getElementById('final-score').innerText = score;
+    document.getElementById('game-over').style.display = 'block';
+    
+    // Отключаем управление игроком
+    document.getElementById('player').setAttribute('dynamic-body', 'mass: 0'); // Отключение физики
+}
 
+document.getElementById('restart-btn').addEventListener('click', () => {
+    location.reload();
+});
+
+const playerEntity = document.getElementById('player');
+
+function movePlayer(controller) {
+    const controllerPosition = controller.object3D.position;
+    
+    playerEntity.setAttribute('position', {
+        x: controllerPosition.x,
+        y: playerEntity.object3D.position.y,
+        z: controllerPosition.z
+    });
+
+    checkForCollectibles();
+}
+
+// Добавляем обработчики событий для контроллеров
+const rightController = document.querySelector('#right-hand');
+const leftController = document.querySelector('#left-hand');
+
+rightController.addEventListener('selectstart', () => movePlayer(rightController));
+leftController.addEventListener('selectstart', () => movePlayer(leftController));
+
+// Функция для рандомизации позиций при перезапуске
+function spawnObjects() {
+    const positions = [];
+    
+    for (let i = 0; i < collectibles.length; i++) {
+        const x = Math.random() * 10 - 5;
+        const z = Math.random() * 10 - 5;
+        
+        collectibles[i].setAttribute('position', {x, y: 0.5, z});
+        positions.push({x, y: 1, z});
+    }
+}
+
+// Вызываем spawnObjects при перезапуске игры
+document.getElementById('restart-btn').addEventListener('click', () => {
+   spawnObjects();
+   location.reload();
+});
+
+// Добавление гравитации
+AFRAME.registerComponent('gravity', {
+   tick: function () {
+       this.el.body.applyForce(0, -9.8, 0);
+   }
+});
+
+// Применение гравитации к игроку
+playerEntity.setAttribute('gravity', '');
 </script>
 
 </body>
