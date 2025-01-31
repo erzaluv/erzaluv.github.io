@@ -104,38 +104,48 @@ function endGame() {
 }
 
 document.getElementById('restart-btn').addEventListener('click', () => {
-   location.reload();
+    location.reload();
 });
 
 const playerEntity = document.getElementById('player');
 
-// Функция для передвижения игрока с помощью клавиатуры
-function movePlayer(event) {
-   if (gameOver) return;
+function movePlayer(controller) {
+    const controllerPosition = controller.object3D.position;
+    
+    playerEntity.setAttribute('position', {
+        x: controllerPosition.x,
+        y: playerEntity.object3D.position.y,
+        z: controllerPosition.z
+    });
 
-   const movementSpeed = 0.1;
-   const playerPosition = playerEntity.object3D.position;
-
-   switch(event.key) {
-       case 'w': // Вперед
-           playerEntity.setAttribute('position', { x: playerPosition.x, y: playerPosition.y, z: playerPosition.z - movementSpeed });
-           break;
-       case 's': // Назад
-           playerEntity.setAttribute('position', { x: playerPosition.x, y: playerPosition.y, z: playerPosition.z + movementSpeed });
-           break;
-       case 'a': // Влево
-           playerEntity.setAttribute('position', { x: playerPosition.x - movementSpeed, y: playerPosition.y, z: playerPosition.z });
-           break;
-       case 'd': // Вправо
-           playerEntity.setAttribute('position', { x: playerPosition.x + movementSpeed, y: playerPosition.y, z: playerPosition.z });
-           break;
-   }
-
-   checkForCollectibles();
+    checkForCollectibles();
 }
 
-// Добавляем обработчик событий для клавиатуры
-window.addEventListener('keydown', movePlayer);
+// Добавляем обработчики событий для контроллеров
+const rightController = document.querySelector('#right-hand');
+const leftController = document.querySelector('#left-hand');
+
+rightController.addEventListener('selectstart', () => movePlayer(rightController));
+leftController.addEventListener('selectstart', () => movePlayer(leftController));
+
+// Функция для рандомизации позиций при перезапуске
+function spawnObjects() {
+    const positions = [];
+    
+    for (let i = 0; i < collectibles.length; i++) {
+        const x = Math.random() * 10 - 5;
+        const z = Math.random() * 10 - 5;
+        
+        collectibles[i].setAttribute('position', {x, y: 0.5, z});
+        positions.push({x, y: 1, z});
+    }
+}
+
+// Вызываем spawnObjects при перезапуске игры
+document.getElementById('restart-btn').addEventListener('click', () => {
+   spawnObjects();
+   location.reload();
+});
 
 // Добавление гравитации
 AFRAME.registerComponent('gravity', {
