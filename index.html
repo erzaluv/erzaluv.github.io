@@ -6,7 +6,7 @@
     <title>Сбор объектов в A-Frame</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.rawgit.com/donmccurdy/aframe-physics-system/master/dist/aframe-physics-system.min.js"></script>
-    <script src="https://unpkg.com/aframe-animation-component@3.2.5/dist/aframe-animation-component.min.js"></script> <!-- Подключение компонента анимации -->
+    <script src="https://unpkg.com/aframe-animation-component@3.2.5/dist/aframe-animation-component.min.js"></script>
     <style>
         body { margin: 0; }
         #game-over { position: absolute; top: 20px; left: 20px; color: white; display: none; }
@@ -31,13 +31,7 @@
     </a-entity>
 
     <!-- Объекты для сбора -->
-    <a-sphere position="-3 0.5 -5" radius="0.5" color="#EF2D5E" class="collectible" dynamic-body></a-sphere>
-    <a-sphere position="2 0.5 -3" radius="0.5" color="#4CC3D9" class="collectible" dynamic-body></a-sphere>
-    <a-sphere position="0 0.5 -8" radius="0.5" color="#FFC65D" class="collectible" dynamic-body></a-sphere>
-    <a-sphere position="-5 0.5 -10" radius="0.5" color="#FF5733" class="collectible" dynamic-body></a-sphere>
-    <a-sphere position="4 0.5 -7" radius="0.5" color="#C70039" class="collectible" dynamic-body></a-sphere>
-    <a-sphere position="-2 0.5 -12" radius="0.5" color="#900C3F" class="collectible" dynamic-body></a-sphere>
-    <a-sphere position="3 0.5 -4" radius="0.5" color="#581845" class="collectible" dynamic-body></a-sphere>
+    <!-- Объекты будут создаваться динамически через JavaScript -->
 
     <!-- Текст для счета и таймера -->
     <a-text id="score-text" value="Score: 0" position="-1 4 -4.1" color="#FFF"></a-text>
@@ -45,14 +39,6 @@
 
     <!-- Звук при сборе -->
     <a-sound src="yoursound.wav" autoplay="false" id="collectSound"></a-sound>
-
-    <!-- Движущиеся объекты с анимацией -->
-    <a-entity id="movingObj"
-              geometry="primitive: cone"
-              material="color: red"
-              position="0 2 -8"
-              animation__move="property: position; to: 5 2 -8; dur: 2000; loop: true">
-    </a-entity>
 
 </a-scene>
 
@@ -63,47 +49,78 @@ let gameOver = false;
 
 const scoreText = document.getElementById('score-text');
 const timerText = document.getElementById('timer-text');
-const collectibles = document.querySelectorAll('.collectible');
+const collectibles = [];
+
+function createCollectible(position) {
+    const collectible = document.createElement('a-sphere');
+    collectible.setAttribute('position', position);
+    collectible.setAttribute('radius', '0.5');
+    
+    // Задаем случайный цвет
+    const colors = ['#EF2D5E', '#4CC3D9', '#FFC65D', '#FF5733', '#C70039', '#900C3F', '#581845'];
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    
+    collectible.setAttribute('color', randomColor);
+    collectible.setAttribute('class', 'collectible');
+    collectible.setAttribute('dynamic-body', '');
+    
+    // Добавление анимации
+    collectible.setAttribute('animation__scale', 'property: scale; to: 1.2 1.2 1.2; dir: alternate; dur: 500; loop: true');
+
+    document.querySelector('a-scene').appendChild(collectible);
+}
+
+function spawnObjects() {
+   for (let i = 0; i < 6; i++) {
+       const x = Math.random() * 10 - 5;
+       const z = Math.random() * -15; // Ограничиваем по оси Z
+       createCollectible({ x, y: 0.5, z });
+   }
+}
+
+// Инициализация объектов при загрузке страницы
+spawnObjects();
 
 function checkForCollectibles() {
-    collectibles.forEach(collectible => {
-        const collectiblePosition = collectible.object3D.position;
-        const playerPosition = document.getElementById('player').object3D.position;
+   const collectibleElements = document.querySelectorAll('.collectible');
+   collectibleElements.forEach(collectible => {
+       const collectiblePosition = collectible.object3D.position;
+       const playerPosition = document.getElementById('player').object3D.position;
 
-        const distance = collectiblePosition.distanceTo(playerPosition);
-        if (distance < 1) {
-            collectible.parentNode.removeChild(collectible);
-            score++;
-            scoreText.setAttribute('value', `Score: ${score}`);
-            // Воспроизведение звука при сборе
-            document.querySelector('#collectSound').components.sound.playSound();
-        }
-    });
+       const distance = collectiblePosition.distanceTo(playerPosition);
+       if (distance < 1) {
+           collectible.parentNode.removeChild(collectible);
+           score++;
+           scoreText.setAttribute('value', `Score: ${score}`);
+           // Воспроизведение звука при сборе
+           document.querySelector('#collectSound').components.sound.playSound();
+       }
+   });
 
-    // Проверка на окончание игры
-    if (score >= collectibles.length) {
-        endGame();
-    }
+   // Проверка на окончание игры
+   if (score >= collectibles.length) {
+       endGame();
+   }
 }
 
 const countdown = setInterval(() => {
-    if (timer > 0 && !gameOver) {
-        timer--;
-        timerText.setAttribute('value', `Время: ${timer}`);
-        checkForCollectibles();
-    } else if (timer === 0 && !gameOver) {
-        endGame();
-    }
+   if (timer > 0 && !gameOver) {
+       timer--;
+       timerText.setAttribute('value', `Время: ${timer}`);
+       checkForCollectibles();
+   } else if (timer === 0 && !gameOver) {
+       endGame();
+   }
 }, 1000);
 
 function endGame() {
-    gameOver = true;
-    clearInterval(countdown);
-    document.getElementById('final-score').innerText = score;
-    document.getElementById('game-over').style.display = 'block';
-    
-    // Отключаем управление игроком
-    document.getElementById('player').setAttribute('dynamic-body', 'mass: 0'); // Отключение физики
+   gameOver = true;
+   clearInterval(countdown);
+   document.getElementById('final-score').innerText = score;
+   document.getElementById('game-over').style.display = 'block';
+   
+   // Отключаем управление игроком
+   document.getElementById('player').setAttribute('dynamic-body', 'mass: 0'); // Отключение физики
 }
 
 document.getElementById('restart-btn').addEventListener('click', () => {
